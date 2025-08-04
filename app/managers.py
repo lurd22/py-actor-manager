@@ -21,42 +21,49 @@ class ActorManager:
             """)
             conn.commit()
 
-    def create(self, first_name: str, last_name: str) -> None:
+    def create(self, first_name: str, last_name: str) -> Actor:
         with sqlite3.connect(self.db_name) as conn:
             cursor = conn.cursor()
-            cursor.execute(f"""
+            cursor.execute(f'''
                 INSERT INTO {self.table_name} (first_name, last_name)
                 VALUES (?, ?)
-            """, (first_name, last_name))
+            ''', (first_name, last_name))
+            actor_id = cursor.lastrowid
             conn.commit()
+            return Actor(
+                id=actor_id, first_name=first_name, last_name=last_name
+            )
 
     def all(self) -> list[Actor]:
         with sqlite3.connect(self.db_name) as conn:
             cursor = conn.cursor()
-            cursor.execute(f"""
+            cursor.execute(f'''
                 SELECT id, first_name, last_name FROM {self.table_name}
-            """)
+            ''')
             rows = cursor.fetchall()
-            return [
-                Actor(id=row[0], first_name=row[1], last_name=row[2])
-                for row in rows
-            ]
+            actors = []
+            for row in rows:
+                actor = Actor(id=row[0], first_name=row[1], last_name=row[2])
+                actors.append(actor)
+            return actors
 
-    def update(self, pk: int, new_first_name: str, new_last_name: str) -> None:
+    def update(self, pk: int, new_first_name: str, new_last_name: str) -> bool:
         with sqlite3.connect(self.db_name) as conn:
             cursor = conn.cursor()
-            cursor.execute(f"""
+            cursor.execute(f'''
                 UPDATE {self.table_name}
                 SET first_name = ?, last_name = ?
                 WHERE id = ?
-            """, (new_first_name, new_last_name, pk))
+            ''', (new_first_name, new_last_name, pk))
             conn.commit()
+            return cursor.rowcount > 0
 
-    def delete(self, pk: int) -> None:
+    def delete(self, pk: int) -> bool:
         with sqlite3.connect(self.db_name) as conn:
             cursor = conn.cursor()
-            cursor.execute(f"""
+            cursor.execute(f'''
                 DELETE FROM {self.table_name}
                 WHERE id = ?
-            """, (pk,))
+            ''', (pk,))
             conn.commit()
+            return cursor.rowcount > 0
